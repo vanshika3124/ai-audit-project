@@ -4,145 +4,155 @@ import { runAudit, ToolInput, AuditResult } from './lib/auditEngine';
 
 export default function AuditPage() {
   const [tools, setTools] = useState<ToolInput[]>([]);
-  const [email, setEmail] = useState("");
   const [currentTool, setCurrentTool] = useState<ToolInput>({ 
-    name: 'ChatGPT', plan: 'Team', monthlySpend: 0, seats: 1 
+    name: 'ChatGPT', monthlySpend: 0, seats: 1, useCase: 'Coding' 
   });
-  const [isSaved, setIsSaved] = useState(false);
+  const [email, setEmail] = useState("");
 
+  // Load from localstorage
   useEffect(() => {
-    const saved = localStorage.getItem('credex_audit');
-    if (saved) {
-      try { setTools(JSON.parse(saved)); } catch (e) { console.error(e); }
-    }
+    const saved = localStorage.getItem('credex_audit_v2');
+    if (saved) setTools(JSON.parse(saved));
   }, []);
 
-  const addTool = () => {
-    if (currentTool.monthlySpend <= 0) return alert("Please enter spend");
+  const addToStack = () => {
+    if (currentTool.monthlySpend <= 0) return;
     const updated = [...tools, currentTool];
     setTools(updated);
-    localStorage.setItem('credex_audit', JSON.stringify(updated));
+    localStorage.setItem('credex_audit_v2', JSON.stringify(updated));
+    setCurrentTool({ ...currentTool, monthlySpend: 0 }); // Reset for next tool
   };
 
   const results = runAudit(tools);
-  const totalMonthlySavings = results.reduce((acc, curr) => acc + curr.savings, 0);
+  const totalMonthly = results.reduce((acc, curr) => acc + curr.savings, 0);
 
   return (
-    <div className="max-w-4xl mx-auto p-6 md:p-12 bg-[#0a0a0a] min-h-screen text-white font-sans">
-      <header className="mb-12">
-        <h1 className="text-5xl font-black tracking-tighter text-[#7db94a] mb-2">
-          CREDEX AI AUDIT
-        </h1>
-        <p className="text-gray-400 text-lg">Stop overpaying for your AI infrastructure.</p>
-      </header>
+    <div className="min-h-screen bg-[#0f0f0f] text-white flex justify-center py-12 px-4 md:px-0">
+      <div className="w-full max-w-4xl">
+        
+        {/* 1. HEADER */}
+        <header className="mb-12 px-2">
+          <h1 className="text-4xl font-black tracking-tighter text-[#7db94a]">
+            CREDEX AI AUDIT
+          </h1>
+          <p className="text-gray-400 font-medium">Identify overspend in your AI infrastructure stack.</p>
+        </header>
 
-      {/* INPUT SECTION */}
-      <section className="bg-[#161616] p-8 rounded-3xl border border-gray-800 mb-12 shadow-2xl">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-gray-500">Tool</label>
+        {/* 2. DYNAMIC SAVINGS HERO (Only shows if tools added) */}
+        {tools.length > 0 && (
+          <div className="bg-[#f2f9eb] rounded-[2.5rem] p-10 mb-10 text-[#2d4a22] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <p className="text-xs font-black uppercase tracking-widest mb-4 opacity-60">Calculated Savings</p>
+            <div className="flex flex-col md:flex-row md:items-baseline gap-4">
+              <h2 className="text-7xl md:text-8xl font-black tracking-tighter leading-none">
+                ${totalMonthly.toLocaleString()}
+              </h2>
+              <span className="text-4xl opacity-30 hidden md:block">→</span>
+              <div className="flex flex-col">
+                <h3 className="text-4xl font-bold tracking-tight">${(totalMonthly * 12).toLocaleString()}</h3>
+                <p className="text-xs font-black uppercase opacity-60">Saved Per Year</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. INPUT BUILDER BAR */}
+        <div className="bg-[#1a1a1a] p-4 rounded-[2rem] border border-white/5 mb-12 shadow-xl">
+          <div className="flex flex-col md:flex-row gap-4">
             <select 
-              className="w-full bg-black p-4 rounded-xl border border-gray-800 focus:border-[#7db94a] outline-none"
+              className="flex-1 bg-black p-4 rounded-2xl border border-white/10 outline-none focus:border-[#7db94a] text-sm font-bold"
+              value={currentTool.name}
               onChange={(e) => setCurrentTool({...currentTool, name: e.target.value})}
             >
-              <option>ChatGPT</option>
-              <option>Cursor</option>
-              <option>OpenAI API</option>
-              <option>Claude</option>
+              <option value="ChatGPT">ChatGPT</option>
+              <option value="Cursor">Cursor</option>
+              <option value="Claude">Claude</option>
+              <option value="OpenAI API">OpenAI API</option>
             </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-gray-500">Monthly Spend ($)</label>
+            
             <input 
               type="number" 
-              placeholder="e.g. 500"
-              className="w-full bg-black p-4 rounded-xl border border-gray-800 focus:border-[#7db94a] outline-none"
+              placeholder="Spend ($)" 
+              className="flex-1 bg-black p-4 rounded-2xl border border-white/10 outline-none focus:border-[#7db94a] text-sm font-bold"
+              value={currentTool.monthlySpend || ''}
               onChange={(e) => setCurrentTool({...currentTool, monthlySpend: Number(e.target.value)})}
             />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-gray-500">Seats</label>
+
             <input 
               type="number" 
-              placeholder="e.g. 10"
-              className="w-full bg-black p-4 rounded-xl border border-gray-800 focus:border-[#7db94a] outline-none"
+              placeholder="Seats" 
+              className="w-full md:w-24 bg-black p-4 rounded-2xl border border-white/10 outline-none focus:border-[#7db94a] text-sm font-bold text-center"
+              value={currentTool.seats || ''}
               onChange={(e) => setCurrentTool({...currentTool, seats: Number(e.target.value)})}
             />
+
+            <button 
+              onClick={addToStack} 
+              className="w-full md:w-auto bg-[#7db94a] text-black font-black px-8 py-4 rounded-2xl hover:scale-[0.98] transition-all text-sm uppercase"
+            >
+              Add Tool
+            </button>
           </div>
         </div>
-        <button 
-          onClick={addTool} 
-          className="mt-8 w-full bg-[#7db94a] text-black font-black py-5 rounded-2xl hover:scale-[1.02] transition-transform text-lg"
-        >
-          ADD TO AUDIT
-        </button>
-      </section>
 
-      {/* RESULTS SECTION */}
-      {tools.length > 0 && (
-        <div className="animate-in fade-in duration-700">
-          <div className="bg-[#dcfce710] border-2 border-[#7db94a] p-10 rounded-[2rem] mb-12 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div>
-              <p className="text-[#7db94a] uppercase text-sm font-black tracking-widest mb-1">Total Annual Savings</p>
-              <h2 className="text-7xl font-black text-[#7db94a] tracking-tighter">
-                ${(totalMonthlySavings * 12).toLocaleString()}
-              </h2>
+        {/* 4. RESULTS BREAKDOWN */}
+        <div className="px-2">
+          <h3 className="text-xl font-bold mb-6">Per-tool breakdown</h3>
+          {tools.length === 0 ? (
+            <div className="border-2 border-dashed border-white/5 rounded-[2rem] p-16 text-center text-white/20 font-bold uppercase tracking-widest">
+              Add your first tool to start
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold">{tools.length} Tools Audited</p>
-              <p className="text-gray-500 italic">"You're burning cash!"</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold mb-6">Per-tool breakdown</h3>
-            {results.map((res: AuditResult, i: number) => (
-              <div key={i} className="flex justify-between items-center p-8 bg-[#161616] rounded-2xl border border-gray-800 hover:border-gray-600 transition-colors">
-                <div>
-                  <h4 className="font-black text-xl mb-1">{res.name}</h4>
-                  <p className="text-gray-400 text-sm max-w-md leading-relaxed">{res.reason}</p>
-                </div>
-                <div className="text-right">
-                  {res.savings > 0 ? (
-                    <div className="text-[#7db94a]">
-                      <p className="text-2xl font-black">Save ${res.savings.toLocaleString()}</p>
-                      <p className="text-xs uppercase font-bold text-gray-500">per month</p>
+          ) : (
+            <div className="space-y-4">
+              {results.map((res: AuditResult, i: number) => (
+                <div key={i} className="bg-[#161616] p-8 rounded-[2rem] border border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group hover:border-[#7db94a]/30 transition-all">
+                  <div className="flex items-center gap-6">
+                    <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center font-black text-[#7db94a] border border-white/10 group-hover:scale-110 transition-transform">
+                      {res.name[0]}
                     </div>
-                  ) : (
-                    <div className="text-gray-500 font-bold uppercase tracking-widest text-sm">Optimal</div>
-                  )}
+                    <div>
+                      <h4 className="text-xl font-bold">{res.name}</h4>
+                      <p className="text-gray-500 text-sm max-w-xs">{res.reason}</p>
+                    </div>
+                  </div>
+                  <div className="w-full md:w-auto text-right">
+                    {res.savings > 0 ? (
+                      <span className="bg-[#7db94a] text-black px-4 py-2 rounded-full text-xs font-black uppercase inline-block">
+                        Save ${res.savings.toLocaleString()}/mo
+                      </span>
+                    ) : (
+                      <span className="text-gray-600 font-bold uppercase text-xs tracking-widest">Optimal Stack</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* LEAD CAPTURE */}
-          {!isSaved && (
-            <div className="mt-20 p-12 bg-white rounded-[2.5rem] text-black text-center relative overflow-hidden">
-              <div className="relative z-10">
-                <h3 className="text-4xl font-black tracking-tighter mb-4">CLAIM YOUR SAVINGS</h3>
-                <p className="text-gray-600 mb-8 font-medium max-w-md mx-auto">
-                  Enter your email to receive the PDF report and unlock Credex discounted credits.
-                </p>
-                <div className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto">
-                  <input 
-                    type="email" 
-                    placeholder="name@company.com" 
-                    className="flex-1 p-5 bg-gray-100 rounded-2xl border-none focus:ring-2 focus:ring-[#7db94a] outline-none text-black font-bold"
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  <button 
-                    onClick={() => { setIsSaved(true); alert("Lead Saved! (Check Console)"); console.log("Lead:", email, tools); }}
-                    className="bg-black text-[#7db94a] font-black px-10 py-5 rounded-2xl hover:invert transition-all"
-                  >
-                    GET REPORT
-                  </button>
-                </div>
-              </div>
+              ))}
             </div>
           )}
         </div>
-      )}
+
+        {/* 5. LEAD CAPTURE (Bottom) */}
+        {tools.length > 0 && (
+          <div className="mt-20 p-12 bg-white rounded-[3rem] text-black text-center shadow-2xl animate-in fade-in duration-1000">
+            <h3 className="text-4xl font-black tracking-tighter mb-4 uppercase leading-none">Export Audit</h3>
+            <p className="text-gray-500 mb-8 max-w-sm mx-auto font-medium leading-tight">
+              Enter your email to receive a shareable PDF and unlock discounted enterprise credits.
+            </p>
+            <div className="flex flex-col md:flex-row gap-3 max-w-md mx-auto">
+              <input 
+                type="email" 
+                placeholder="name@company.com" 
+                className="flex-1 p-5 bg-gray-100 rounded-2xl border-none outline-none font-bold text-black focus:ring-2 focus:ring-[#7db94a]"
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <button 
+                className="bg-black text-[#7db94a] font-black px-10 py-5 rounded-2xl hover:bg-gray-900 transition-all text-sm uppercase"
+                onClick={() => alert(`Sending report to ${email}`)}
+              >
+                Get PDF
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
