@@ -19,27 +19,29 @@ export const runAudit = (inputs: ToolInput[]): AuditResult[] => {
     let reason = "Your current plan is optimal for your team size.";
     let isOptimal = true;
 
-    // ChatGPT Logic
-    if (tool.name === 'ChatGPT' && tool.plan === 'Team' && tool.seats < 3) {
-      savings = tool.monthlySpend - (tool.seats * 20);
-      recommendedPlan = "Plus";
-      reason = `${tool.seats} seats are better managed on Plus plans than Team.`;
-      isOptimal = false;
+    // ChatGPT Logic: Team plan is $25/seat (min 2). Plus is $20.
+    if (tool.name === 'ChatGPT') {
+      if (tool.seats < 5 && tool.monthlySpend > (tool.seats * 20)) {
+        savings = tool.monthlySpend - (tool.seats * 20);
+        recommendedPlan = "ChatGPT Plus";
+        reason = "Moving to Individual Plus seats saves you money for small teams.";
+        isOptimal = false;
+      }
     }
 
-    // Cursor Logic
-    if (tool.name === 'Cursor' && tool.plan === 'Business') {
-      savings = tool.monthlySpend * 0.25; // Credex Discount
+    // Cursor Logic: Credex sources Business seats at 20% discount
+    if (tool.name === 'Cursor') {
+      savings = tool.monthlySpend * 0.20;
       recommendedPlan = "Business (via Credex)";
-      reason = "Credex credits can reduce your Business seat cost by 25%.";
+      reason = "Credex credits can capture 20% savings on your current Cursor spend.";
       isOptimal = false;
     }
 
-    // API Logic
-    if (tool.name.includes('API') && tool.monthlySpend > 200) {
+    // Generic API Savings
+    if (tool.name.includes('API') && tool.monthlySpend > 100) {
       savings = tool.monthlySpend * 0.30;
-      recommendedPlan = "Direct Credits";
-      reason = "High API usage is eligible for 30% savings via bulk credits.";
+      recommendedPlan = "Enterprise Credits";
+      reason = "High API usage is eligible for 30% discount via Credex secondary credits.";
       isOptimal = false;
     }
 
