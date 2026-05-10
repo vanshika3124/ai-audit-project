@@ -5,22 +5,44 @@ export interface ToolInput {
   seats: number;
 }
 
-export const runAudit = (inputs: ToolInput[]) => {
+export interface AuditResult extends ToolInput {
+  recommendedPlan: string;
+  savings: number;
+  reason: string;
+  isOptimal: boolean;
+}
+
+export const runAudit = (inputs: ToolInput[]): AuditResult[] => {
   return inputs.map((tool) => {
     let savings = 0;
-    let action = "Optimal";
-    let reason = "You are spending efficiently.";
+    let recommendedPlan = tool.plan;
+    let reason = "Your current plan is optimal for your team size.";
+    let isOptimal = true;
 
-    if (tool.name === 'ChatGPT' && tool.plan === 'Team' && tool.seats < 6) {
-      savings = tool.monthlySpend - (tool.seats * 20); // Plus is $20
-      action = "Switch to Plus";
-      reason = "Team plan efficiency starts at 6+ seats.";
-    } else if (tool.name === 'Cursor' && tool.plan === 'Business') {
-      savings = tool.monthlySpend * 0.25; // 25% discount via Credex
-      action = "Buy via Credex";
-      reason = "Save ~25% through secondary credit markets.";
+    // ChatGPT Logic
+    if (tool.name === 'ChatGPT' && tool.plan === 'Team' && tool.seats < 3) {
+      savings = tool.monthlySpend - (tool.seats * 20);
+      recommendedPlan = "Plus";
+      reason = `${tool.seats} seats are better managed on Plus plans than Team.`;
+      isOptimal = false;
     }
 
-    return { ...tool, savings, action, reason };
+    // Cursor Logic
+    if (tool.name === 'Cursor' && tool.plan === 'Business') {
+      savings = tool.monthlySpend * 0.25; // Credex Discount
+      recommendedPlan = "Business (via Credex)";
+      reason = "Credex credits can reduce your Business seat cost by 25%.";
+      isOptimal = false;
+    }
+
+    // API Logic
+    if (tool.name.includes('API') && tool.monthlySpend > 200) {
+      savings = tool.monthlySpend * 0.30;
+      recommendedPlan = "Direct Credits";
+      reason = "High API usage is eligible for 30% savings via bulk credits.";
+      isOptimal = false;
+    }
+
+    return { ...tool, recommendedPlan, savings: Math.max(0, savings), reason, isOptimal };
   });
 };
