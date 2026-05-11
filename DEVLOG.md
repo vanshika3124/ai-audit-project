@@ -2,11 +2,24 @@
 **Hours worked:** 0.5
 **What I did:** Initialized Next.js project with TypeScript and Tailwind. Created the mandatory repository structure and engineering documentation files.
 **What I learned:** Reviewing Credex's specific requirements for AI-assisted evaluations.
-## Day 2 — 2026-05-08
+## Day 2 — 2026-05-09
 **Hours worked:** 2
 **What I did:** Implemented the math logic for audit savings and built the frontend list to display tool breakdowns.
 **What I learned:** How to manage dynamic form state in React for multiple inputs.
-## Day 3 — 2026-05-08
+## Day 3 — 2026-05-10
 **Hours worked:** 3
 **What I did:** Refined the UI to match high-fidelity wireframes, implemented the "AI Stack Builder" logic to handle multiple tools, and fixed responsive layout bugs.
 **What I learned:** Handling React hydration issues with LocalStorage in Next.js.
+## Day 4 — 2026-05-11
+**Hours worked:** 3
+**What I did:** * Successfully integrated Supabase for lead capture and database management.
+
+Fixed critical Environment Variable pathing issues and resolved "Invalid API Key" errors.
+
+Implemented the lead generation UI to capture user emails and store audit results.
+
+Added mandatory documentation files: ECONOMICS.md and GTM.md for project evaluation.
+**What I learned:** How to configure Row Level Security (RLS) policies in Supabase for public inserts.
+
+Managing deployment-specific environment variables in Netlify.
+ 
