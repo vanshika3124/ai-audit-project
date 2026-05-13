@@ -1,179 +1,149 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { runAudit, ToolInput } from './lib/auditEngine';
 import { supabase } from './lib/supabase';
 
+const AVAILABLE_TOOLS = [
+  { id: 'cursor', name: 'Cursor', desc: 'Code editor', color: 'bg-black', icon: 'C' },
+  { id: 'chatgpt', name: 'ChatGPT', desc: 'Writing / research', color: 'bg-[#10a37f]', icon: 'GP' },
+  { id: 'claude', name: 'Claude', desc: 'Writing / coding', color: 'bg-[#d97757]', icon: 'AN' },
+  { id: 'copilot', name: 'Copilot', desc: 'Code editor', color: 'bg-[#24292e]', icon: 'GH' },
+  { id: 'gemini', name: 'Gemini', desc: 'General AI', color: 'bg-[#4285f4]', icon: 'GM' },
+  { id: 'windsurf', name: 'Windsurf', desc: 'Code editor', color: 'bg-[#5b21b6]', icon: 'WS' },
+];
+
 export default function AuditPage() {
-  // State Management
-  const [tools, setTools] = useState<ToolInput[]>([]);
-  const [currentTool, setCurrentTool] = useState<ToolInput>({ 
-    name: 'ChatGPT', 
-    monthlySpend: 0, 
-    seats: 1, 
-    useCase: 'Coding' 
-  });
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [toolData, setToolData] = useState<Record<string, ToolInput>>({});
   const [email, setEmail] = useState("");
-  const [aiSummary, setAiSummary] = useState("");
+  const [isAudited, setIsAudited] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
 
-  // Math Calculations
-  const results = runAudit(tools);
-  const totalMonthlySavings = results.reduce((acc, curr) => acc + curr.savings, 0);
-  const totalAnnualSavings = totalMonthlySavings * 12;
-
-  // Add Tool to List - FIXED LOGIC
-  const addToStack = () => {
-    if (currentTool.monthlySpend <= 0) {
-      alert("Please enter a valid monthly spend!");
-      return;
+  const toggleTool = (id: string, name: string) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(i => i !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+      if (!toolData[id]) {
+        setToolData({ ...toolData, [id]: { name, monthlySpend: 0, seats: 1, useCase: 'General' } });
+      }
     }
-    // Latest state ka use karke naya tool add karo
-    setTools((prev) => [...prev, { ...currentTool }]);
+  };
+
+  const updateData = (id: string, field: keyof ToolInput, value: any) => {
+    setToolData({ ...toolData, [id]: { ...toolData[id], [field]: value } });
+  };
+
+  const totalAnnual = Object.values(toolData)
+    .filter((_, i) => selectedIds.includes(Object.keys(toolData)[i]))
+    .reduce((acc, curr) => acc + (curr.monthlySpend * 12), 0);
+
+  const handleAudit = async () => {
+    if (selectedIds.length === 0) return alert("Pehle tools select karo!");
+    if (!email || !email.includes('@')) return alert("Valid work email zaroori hai!");
     
-    // Inputs ko default par reset karo
-    setCurrentTool({ name: 'ChatGPT', monthlySpend: 0, seats: 1, useCase: 'Coding' });
-  };
-
-  // LinkedIn Sharing
-  const handleShare = () => {
-    const text = `I just found $${totalAnnualSavings.toLocaleString()} in hidden savings on my AI stack using Credex! 🚀 Check yours: ${window.location.href}`;
-    const shareUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`;
-    window.open(shareUrl, '_blank');
-  };
-
-  // Save to Supabase
-  const handleSaveLead = async () => {
-    if (!email) return alert("Enter email first!");
     setLoading(true);
-    try {
-      const { error } = await supabase.from('leads').insert([{ 
+    const { error } = await supabase.from('leads').insert([{ 
         email, 
-        savings: totalAnnualSavings, 
-        tools 
-      }]);
-      if (error) throw error;
-      
-      setAiSummary(`Audit Successful! Switching to Credex credits could recover up to 40% of your operational costs for ${tools.length} tools.`);
-      setIsSaved(true);
-    } catch (err: any) {
-      alert("Error: " + err.message);
-    } finally {
-      setLoading(false);
-    }
+        savings: totalAnnual, 
+        tools: Object.values(toolData).filter((_, i) => selectedIds.includes(Object.keys(toolData)[i])) 
+    }]);
+    
+    if (!error) setIsAudited(true);
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white py-12 px-4 selection:bg-[#7db94a] selection:text-black font-sans">
-      <div className="w-full max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#1a1a1a] text-white p-6 md:p-12 font-sans selection:bg-[#7db94a] selection:text-black print:bg-white print:text-black">
+      <div className="max-w-5xl mx-auto bg-[#262626] rounded-[2.5rem] p-10 shadow-2xl border border-white/5 print:border-none print:bg-transparent">
         
-        {/* HEADER */}
-        <header className="mb-12 flex justify-between items-end border-b border-white/5 pb-6">
-          <div>
-            <h1 className="text-6xl font-black text-[#7db94a] tracking-tighter italic">CREDEX</h1>
-            <p className="text-gray-500 font-bold tracking-[0.3em] text-[10px] mt-2 uppercase">AI Spend Audit Engine</p>
+        {/* BRANDING & HEADER */}
+        <header className="mb-12 print:hidden">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-[#7db94a] font-black italic tracking-tighter text-3xl uppercase">Credex</span>
+            <span className="h-4 w-[1px] bg-white/20 mx-2"></span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Audit Engine</span>
           </div>
-          <div className="text-right">
-            <span className="bg-[#7db94a]/10 text-[#7db94a] px-4 py-1 rounded-full text-[10px] font-black tracking-widest border border-[#7db94a]/20">v2.0 LIVE</span>
-          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Which AI tools does your team pay for?</h1>
+          <p className="text-gray-400 text-sm italic mt-1">Select tools from your current stack to begin analysis</p>
         </header>
 
-        {/* HERO SAVINGS DISPLAY */}
-        {tools.length > 0 ? (
-          <div className="bg-[#f2f9eb] rounded-[3rem] p-12 mb-10 text-[#2d4a22] shadow-[0_20px_60px_rgba(125,185,74,0.1)] transform transition-all duration-500 hover:scale-[1.01]">
-            <p className="text-xs font-black uppercase tracking-[0.3em] mb-4 opacity-70">Annual Recovery Potential</p>
-            <h2 className="text-9xl font-black tracking-tighter">
-              ${totalAnnualSavings.toLocaleString()}
-            </h2>
-          </div>
-        ) : (
-          <div className="h-[250px] border-2 border-dashed border-white/10 rounded-[3rem] flex flex-col items-center justify-center text-gray-600 mb-10">
-             <p className="font-black text-xl tracking-tighter uppercase mb-2">Your AI Stack is empty</p>
-             <p className="text-sm font-medium opacity-50">Add tools below to analyze leakage</p>
+        {/* TOOL SELECTION GRID */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-12 print:hidden">
+          {AVAILABLE_TOOLS.map((tool) => {
+            const isSelected = selectedIds.includes(tool.id);
+            return (
+              <button key={tool.id} onClick={() => toggleTool(tool.id, tool.name)}
+                className={`text-left p-4 rounded-xl border-2 transition-all relative ${isSelected ? 'border-[#7db94a] bg-[#7db94a]/5' : 'border-white/5 bg-white/5 hover:bg-white/10'}`}>
+                <div className={`${tool.color} w-8 h-8 rounded-lg flex items-center justify-center font-bold mb-3 text-[10px]`}>{tool.icon}</div>
+                <h3 className="font-bold text-sm">{tool.name}</h3>
+                <div className={`absolute top-3 right-3 w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'bg-[#7db94a] border-[#7db94a]' : 'border-white/20'}`}>
+                  {isSelected && <span className="text-[8px] font-bold text-black">✓</span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* CONFIGURATION SECTION */}
+        {selectedIds.length > 0 && (
+          <div className="space-y-4 pt-10 border-t border-white/5">
+            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-6 print:text-black">Configure Selected Tools</h2>
+            <AnimatePresence>
+              {selectedIds.map((id) => {
+                const info = AVAILABLE_TOOLS.find(t => t.id === id);
+                return (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={id} className="bg-[#1f1f1f] p-6 rounded-2xl border border-white/5 print:bg-gray-100 print:text-black">
+                    <div className="flex items-center gap-3 mb-6">
+                       <div className={`${info?.color} w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px]`}>{info?.icon}</div>
+                       <h4 className="font-bold text-base">{info?.name}</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-gray-600 uppercase ml-1">Select Plan</label>
+                        <select className="w-full bg-[#2b2b2b] p-3 rounded-lg text-xs font-bold border border-white/5 outline-none focus:border-[#7db94a] print:bg-white">
+                          <option>Pro Plan ($20/seat)</option>
+                          <option>Team Plan ($25/seat)</option>
+                          <option>Custom Enterprise</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-gray-600 uppercase ml-1">No. of seats</label>
+                        <input type="number" value={toolData[id]?.seats || ''} onChange={(e) => updateData(id, 'seats', Number(e.target.value))} className="w-full bg-[#2b2b2b] p-3 rounded-lg text-xs font-bold border border-white/5 outline-none print:bg-white" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-gray-600 uppercase ml-1">Monthly Bill ($)</label>
+                        <input type="number" placeholder="e.g. 240" onChange={(e) => updateData(id, 'monthlySpend', Number(e.target.value))} className="w-full bg-[#2b2b2b] p-3 rounded-lg text-xs font-bold border border-[#7db94a] outline-none text-[#7db94a] print:bg-white placeholder:opacity-20" />
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
 
-        {/* INPUT SECTION - 3 COL GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-12 bg-white/5 p-3 rounded-[2.5rem] border border-white/5">
-          <select 
-            className="bg-black p-6 rounded-3xl font-black text-[#7db94a] outline-none cursor-pointer hover:bg-black/80 transition-colors"
-            value={currentTool.name}
-            onChange={(e) => setCurrentTool({...currentTool, name: e.target.value})}
-          >
-            <option>ChatGPT</option>
-            <option>Cursor</option>
-            <option>Claude</option>
-            <option>Github Copilot</option>
-          </select>
+        {/* FOOTER ACTION */}
+        <div className="mt-10 pt-10 border-t border-white/5 flex flex-col md:flex-row items-center gap-6 print:hidden">
+          <input type="email" placeholder="Work email address" value={email} onChange={(e) => setEmail(e.target.value)}
+            className="flex-1 bg-transparent border border-white/10 p-4 rounded-xl text-sm outline-none focus:border-[#7db94a]" />
           
-          <input 
-            type="number" 
-            placeholder="Monthly Cost ($)" 
-            className="bg-black p-6 rounded-3xl font-black outline-none focus:ring-2 focus:ring-[#7db94a] transition-all"
-            value={currentTool.monthlySpend === 0 ? '' : currentTool.monthlySpend}
-            onChange={(e) => setCurrentTool({...currentTool, monthlySpend: Number(e.target.value)})}
-          />
-          
-          <button 
-            onClick={addToStack}
-            className="bg-[#7db94a] hover:bg-white text-black font-black p-6 rounded-3xl transition-all active:scale-95 shadow-lg shadow-[#7db94a]/20"
-          >
-            ADD TO STACK
+          <button onClick={handleAudit} disabled={loading} className="bg-white text-black px-10 py-4 rounded-xl font-black text-sm uppercase tracking-tighter hover:bg-[#7db94a] transition-all">
+            {loading ? "Processing..." : "Calculate Savings →"}
           </button>
         </div>
 
-        {/* REPORT & SHARE SECTION */}
-        {isSaved && (
-          <div className="bg-gradient-to-br from-[#1a1a1a] to-black p-10 rounded-[3rem] border border-[#7db94a]/30 mb-10 animate-in fade-in zoom-in duration-500">
-            <h4 className="text-[#7db94a] font-black text-xs tracking-widest mb-4 uppercase opacity-80">AI Strategy Insights</h4>
-            <p className="text-2xl font-bold leading-tight mb-8">"{aiSummary}"</p>
-            <button 
-              onClick={handleShare}
-              className="w-full md:w-auto bg-white text-black font-black px-10 py-5 rounded-2xl hover:bg-[#7db94a] transition-colors flex items-center justify-center gap-2"
-            >
-              SHARE ON LINKEDIN 
-            </button>
-          </div>
-        )}
-
-        {/* TOOL BREAKDOWN LIST */}
-        <div className="space-y-3 mb-24">
-          <h3 className="text-[10px] font-black text-gray-600 uppercase tracking-widest ml-6 mb-4">Detailed Breakdown</h3>
-          {results.map((res, i) => (
-            <div key={i} className="bg-[#111] p-8 rounded-[2rem] border border-white/5 flex justify-between items-center group hover:bg-[#151515] transition-all">
-              <div>
-                <h4 className="text-xl font-black mb-1 group-hover:text-[#7db94a] transition-colors">{res.name}</h4>
-                <p className="text-gray-500 font-medium text-xs uppercase tracking-tighter italic">{res.reason}</p>
-              </div>
-              <div className="text-right">
-                <span className="text-[#7db94a] text-3xl font-black italic">Save ${res.savings}</span>
-                <p className="text-[9px] font-bold text-gray-700 uppercase tracking-widest">monthly</p>
-              </div>
+        {/* RESULTS OVERLAY */}
+        {isAudited && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-10 bg-[#7db94a] p-12 rounded-[3rem] text-black text-center shadow-2xl">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">Total Annual Recovery Potential</p>
+            <h2 className="text-8xl font-black italic tracking-tighter mb-8 leading-none">${totalAnnual.toLocaleString()}</h2>
+            <div className="flex justify-center gap-3 print:hidden">
+               <button onClick={() => window.open(`https://www.linkedin.com/feed/?shareActive=true&text=I saved $${totalAnnual} on AI with Credex!`, '_blank')} className="bg-black text-white px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all">Share on LinkedIn</button>
+               <button onClick={() => window.print()} className="bg-white text-black px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest border border-black/10 hover:scale-105 transition-all">Download PDF</button>
             </div>
-          ))}
-        </div>
-
-        {/* LEAD CAPTURE MODAL-LIKE BOX */}
-        {!isSaved && tools.length > 0 && (
-          <div className="bg-white p-12 rounded-[4rem] text-black shadow-2xl transform transition-all animate-in slide-in-from-bottom-10 duration-700">
-            <h3 className="text-5xl font-black tracking-tighter mb-4 leading-none uppercase">Unlock Full<br/>Report</h3>
-            <p className="text-gray-500 font-bold mb-10 text-lg italic">We found $${totalAnnualSavings.toLocaleString()} in leakage. Get the plan to fix it.</p>
-            <div className="flex flex-col md:flex-row gap-4">
-              <input 
-                type="email" 
-                placeholder="Work Email Address" 
-                className="flex-[2] p-6 bg-gray-100 rounded-3xl font-bold text-lg border-none focus:ring-2 focus:ring-[#7db94a] outline-none"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <button 
-                onClick={handleSaveLead}
-                disabled={loading}
-                className="flex-1 bg-black text-[#7db94a] font-black p-6 rounded-3xl text-xl hover:scale-[1.03] active:scale-95 transition-all"
-              >
-                {loading ? "SAVING..." : "REVEAL PLAN"}
-              </button>
-            </div>
-          </div>
+          </motion.div>
         )}
 
       </div>
