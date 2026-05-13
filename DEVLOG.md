@@ -43,3 +43,26 @@ The importance of Production vs Local context when handling environment variable
 How to use URL Encoding for creating seamless social media sharing intents.
 
 Refined my understanding of React State Batching when updating arrays and resetting form inputs simultaneously.
+## Day 6 — 2026-05-13
+Hours worked: 5
+What I did:
+
+Major UI Overhaul: Switched to a high-fidelity "Selection-first" flow inspired by modern SaaS onboarding.
+
+Dynamic Tool Configuration: Implemented a state-driven logic where users first select AI tools from a grid, and then configure seats/plans for only the selected tools.
+
+Custom Plan Logic: Added dropdowns for users to select their specific subscription tier (Pro, Team, Enterprise) instead of using hardcoded defaults.
+
+Branding: Integrated Credex branding throughout the application for a professional internship-ready look.
+
+Distribution Features: Finalized the LinkedIn social sharing intent and implemented a system-print based Download PDF feature.
+
+Lead Capture Sync: Ensured the "Calculate Savings" trigger successfully validates the work email and pushes the full tool-stack data to Supabase.
+
+What I learned:
+
+How to manage complex nested states in React when handling multiple dynamic form inputs.
+
+Improving User Experience (UX) by reducing cognitive load—showing users only what they need to see at each step.
+
+Leveraging window.print() with CSS media queries (print:) to create high-quality PDF exports without external library overhead.
