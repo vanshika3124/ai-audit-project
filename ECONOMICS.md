@@ -1,12 +1,9 @@
-# Unit Economics & ROI
+# Project Economics
 
 ### The Problem
-Users pay $20-30/mo for individual AI seats, often with underutilized features.
+Small to medium-sized tech teams often lose 20-40% of their operational budget to "Ghost Subscriptions" or unoptimized AI seat counts.
 
-### Our Solution (Credex Secondary Credits)
-- **Average Individual Spend:** $240/year
-- **Credex Optimized Spend:** $140/year
-- **Projected Savings:** ~$100/year per seat (40% recovery).
-
-### Lead Conversion
-Every audit captured in our Supabase DB represents a potential customer for the Credex platform.
+### The Value Proposition
+* **Transparency**: Visualizes the actual annual drain on capital.
+* **Lead Generation**: Provides a hook for Credex to offer consulting or automated optimization services.
+* **ROI**: A 60-second audit can potentially save a company $5,000 - $20,000 annually.
